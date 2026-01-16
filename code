@@ -1,0 +1,39 @@
+import boto3
+ec2 = boto3.client('ec2', region_name='us-east-1')
+response=ec2.describe_security_groups()
+vulnerabilities=[]
+for sg in response['SecurityGroups']:
+    name=sg['GroupName']
+    sg_id = sg['GroupId']
+    print(f"\n checking security group: {name}")
+    for rule in sg['IpPermissions']:
+        protocol=rule.get('IpProtocol')
+        from_=rule.get('FromPort')
+        ip_ranges = rule.get('IpRanges', [])
+        for ip in ip_ranges:
+         cid=ip['CidrIp']
+         if protocol=='tcp' and from_ == 22 and cid=='0.0.0.0/0' :
+          vulnerabilities.append(f"CRITICAL: {name} ({sg_id}) allows SSH from the WORLD!")
+
+print("\n=== CLOUD FORTRESS AUDIT REPORT ===")
+
+
+
+print("\n=== CLOUD FORTRESS AUDIT REPORT ===")
+
+
+with open("security_audit.txt", "w") as report_file:
+    report_file.write("AWS SECURITY AUDIT LOG\n")
+    report_file.write("======================\n\n")
+
+    if not vulnerabilities:
+        status_msg = "✅ No critical vulnerabilities found. Your fortress is secure!"
+        print(status_msg)
+        report_file.write(status_msg + "\n")
+    else:
+        report_file.write(f"Found {len(vulnerabilities)} vulnerabilities:\n")
+        for v in vulnerabilities:
+            print(f"🚨 {v}")
+            report_file.write(f"- {v}\n")
+
+print("\n📝 Report saved to: security_audit.txt")
